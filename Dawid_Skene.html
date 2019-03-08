@@ -52,7 +52,7 @@ if (window.hljs) {
 <!-- <label for="tufte-mn-1" class="margin-toggle">&#8853;</label><input type="checkbox" id="tufte-mn-1" class="margin-toggle"><span class="marginnote"></span> -->
 <p><label for="tufte-mn-2" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-2" class="margin-toggle"><span class="marginnote"><span style="display: block;"><i>Introduction Outline</i>: <br> * Annotation models <br><br> * Latent truths <br><br> * Relate to other field, e.g. cultural consensus theory, medicine <br><br> * Goal of golden standards with uncertainty <br><br> * This provides great benefit over majority voting, see literature <br><br> * Moreover, if we can obtain golden standard labels with appropriate uncertainty this can be a step towards machine learning with appropriate uncertainty in the labels on which we train our models.<br><br> * We start this case study with Model proposed by Dawid and Skene and compare the usage of EM-algorithm (taken from ..) and the Bayesian model (taken from ..).<br><br></span></span></p>
 <p>In this case study we will discuss models of annotation. Annotation is concerned with producing gold standard labels and alternatively referred to as coding, rating, grading, tagging, or labeling. The problem of producing gold standard labels can be encountered in many differed fields, for instance, Natural Language Processing (NLP) <span class="citation">(Paun et al. 2019)</span>, Medicine (refs, radiology examples), Sociology (?, I refer to Cultural consensus theory) <span class="citation">(Oravecz, Vandekerckhove, and Batchelder 2014)</span>, Item Response Theory (IRT) <span class="citation">(Karabatsos and Batchelder 2003)</span>, or to produce labels that can be used in a supervised learning setting <span class="citation">(Paun et al. 2019)</span>.</p>
-<p>The common setting is that we have <span class="math inline">\(J\)</span> annotators which produce labels for (a subset of) <span class="math inline">\(I\)</span> items which have <span class="math inline">\(K\)</span> possible categories. We assume that the true class (<span class="math inline">\(c\)</span>) (aka. true label, grounded truth, answer key, golden standard) is unknown. There exist class prevalence’s (<span class="math inline">\(\pi\)</span>), annotators have abilities (<span class="math inline">\(\beta\)</span>) and items have a difficulty (<span class="math inline">\(\theta\)</span>). The <span class="math inline">\(K\)</span> categories can be dichotomous or polytomous, with a nominal or ordinal scale. The items can be allowed to have continuous scales too, yet for now we restrict ourselves to the categorical case.</p>
+<p>The common setting is that we have <span class="math inline">\(J\)</span> annotators which produce labels for (a subset of) <span class="math inline">\(I\)</span> items which have <span class="math inline">\(K\)</span> possible categories. In total there are <span class="math inline">\(N\)</span> annotations. We assume that the true class (<span class="math inline">\(c\)</span>) (aka. true label, grounded truth, answer key, golden standard) is unknown. There exist class prevalence’s (<span class="math inline">\(\pi\)</span>), annotators have abilities (<span class="math inline">\(\beta\)</span>) and items have a difficulty (<span class="math inline">\(\theta\)</span>). The <span class="math inline">\(K\)</span> categories can be dichotomous or polytomous, with a nominal or ordinal scale. The items can be allowed to have continuous scales too, yet for now we restrict ourselves to the categorical case.</p>
 <p>The most simple and straightforward way to define a golden standard would be to use a majority voting scheme in which for each item <span class="math inline">\(i \in \{1,2,...,I \}\)</span> the label is taken that was chosen by the majority of the annotators. Majority voting and the associated judgments regarding annotators have been shown to be inferior to model based approaches <span class="citation">(Paun et al. 2019)</span>. We therefore start this case study with the model proposed by <span class="citation">Dawid and Skene (1979)</span> that allows model based estimation of golden standard labels and associated annotator biases. Note that this model does not include item difficulty estimation. We compare their original approach, using an EM algorithm, to using a full Bayesian model. We analyze the original data from the <span class="citation">Dawid and Skene (1979)</span> paper and conduct a simulation study to investigate systematically which approach leads to more accurate results.</p>
 </div>
 <div id="case-study" class="section level2">
@@ -62,9 +62,338 @@ if (window.hljs) {
 </div>
 <div id="data-from-dawid-and-skene" class="section level3">
 <h3>Data from Dawid and Skene</h3>
+<p>The case study of <span class="citation">Dawid and Skene (1979)</span> concerns the pre-operative assessment of patient fitness to undergo general anesthetics. 45 patients are assesed and rated on a 1 to 4 scale such that <span class="math inline">\(I = 45\)</span> and <span class="math inline">\(K = 4\)</span>. There are five annotators, four of which rate each patient once, and one of which annotates each patient three time, as such <span class="math inline">\(J = 5\)</span> and <span class="math inline">\(N = 315\)</span>. As a simple consensus could not be found on the basis of the ratings for each patient<label for="tufte-sn-1" class="margin-toggle sidenote-number">1</label><input type="checkbox" id="tufte-sn-1" class="margin-toggle"><span class="sidenote"><span class="sidenote-number">1</span> Visual representation of the data from <span class="citation">Dawid and Skene (1979)</span>.</span>.</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAABgFBMVEUAAAAAADgAAGMAOjgAOmMAOowAZmMAZrEAsPYAv306AAA6ADg6OgA6Ojg6OmM6ZmM6Zow6ZrE6kLE6kNVNTU1NTW1NTYtNbm1NbotNbqhNjotNjsNmAABmOgBmOjhmZjhmZmNmZoxmkIxmkLFmkNVmttVmtvhuTU1uTW1ubk1ubm1ubotujqhujsNuq96OTU2Obk2Obm2Ojm2OjouOjqiOq8OOyN6OyPiQOgCQZjiQZmOQZoyQkGOQkLGQtrGQttWQtviQ27GQ2/ijpQCrbk2rjm2rjouryN6r5Pi2ZgC2Zji2ZmO2Zoy2kDi2kGO2kIy2toy2trG2ttW229W22/i2/7G2//jIjk3Ijm3Iq4vIq6jI5N7I5PjI/8PI//jbkDjbkGPbtmPbtozbtrHb27Hb29Xb2/jb//jkq23kq4vkyIvkyKjkyMPk5MPk5Pjk//jna/P4dm3/tmP/yIv/24z/27H/29X/5Kj/5MP/5N7//7H//8P//9X//97///j///+M65XuAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3dj4MkVYEn+GrBpbqHRhiqXV1FGTlgHVcdd3ZV2JnhjhxXi7tjBuFk3J21BgTp1Z2jqppuBJvqf30zIn9FZEZmRr7K9168qs9H6a7Ofhn5jczIb0dGREYcXAAQ5CB3AIBSKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECDb1AH1VyhwgmfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJ4GhFyjAYClQgEAKFCBQjgK9e3T09Y8zPC7AXmUo0E9fVqDAVZC+QP/0wyMFClwF6Qv03SMFClwJyQv03pECBa6G1AVabQBVoMCVkLhAv/j7o6N/90MFClwFiQv07tHRV/9HjAId7Xl6ER32uokCeR2vnbQFOv4Af+cXf4pQoKNRMQ06OlyN6o13JXS9tFxtSQu0qs4fXOy5QE8b9jbRjW4u7HbHtVEV6FVwFlSgoQsTg5C0QN+tm3PvBVqvgI5XQQso0Oo+h+P/FOjVczYaF+juDapAi5ayQO8dHX31Nxd7L9Dx/+oCrX5IIrxAb55OCnT8Q+svFGj5ziYFerbr/RRo0RIWaHUE008u1hfoow5d01kacjr+f92fo6UCDZze9nFbCnT99E6r6hwXaPV7a9zhXvMZl2Fc1Z9VgS4atOf0FgvTIOaD3aQr0OoIpm9UP+y9QKvyrP4/KqBAx+V5WP+mQK/WuKo/6wId7Tg9BVq0dAV6d/IBPkqBjk4nK6H7mN72cYEFenh4ejh2Ovn1sCrNwyWDeuMY13vc8uu4y/QUaNGSFei9o6M7v6h/2neBjqyBGpd93Gi+BjrabXoKtGipCnRyBNP8x/0W6HQbaAkFahvoFR2nQK+nVAX67qI0d9oLv/1lPZ30Z9Wgp2mOY+6/F34pfXMvfCvqMPfCl/2WSpt+1CjQ3ZbC7oWp7Of+GklUoPMNoBf7L9DT1Z/iCi/Qso4DLftNnD792dnhzgcxKdDCpSnQ2RFMtb0XaOpvIvW3UqBFfROp7DdxjvT7ex3Lfu6vkTQFeveow3yVdJOyF6TO9MWcTOQKPveRKdBrR4HGpEDzUaAkoEBjUqD5KFASUKAxSZ+P9CSQ4bLGe96JNGTS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIZCnQnZS9I0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQngaEXKMBgKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQg09AIt++Ja0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJYOgFCjBYChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQINvUDLvriW9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSGHqBAgyWAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEBDL9CyL64lfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4Ehl6gAIOlQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUINDQC7Tsi2tJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCeBoRcowGApUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCDT0Ai374lrS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+Uif2Se3Dg5uvB5v+u//n/sZczkKNCbp85E+s5ODsSdiTf3+Kwcv7WPMZSnQmKTPR/q8Hv60KtAv/SrO1N8br95uK8c+Yy5NgcYkfT7S53V+UHs2ztSr1dtt5dhnzKUp0Jikz0f6vI4PDh578uDgyx9Fmfr1LNA//uy7R0dH//Y//XP/u5S9IEmfj/RZff7Ng4Mn4lXYdSzQL352NPO1HSoUKE7dXtWO+Di7ka5hgf7xh0cLd36S7HGB1KpdSF/6VfVr15FMD9+8PS632y8sf7zvvv1BfeuNp15r3Lxcjvf/5vatelDjvstjuqZT++S5g4On39ll9haSFegXf3/UdOcXqR4YSG267nmytBup+mD/Ur17vHbj/9hy+9jDNw4Olm4+X9wyaef3nztYeOajzjEd06lj3nh9MvRG2MpqsgK9W390//nHFxf/Wn+U/0aqBwZSO56s/VXF2DySqS7K80bbPbv59vGqZbMbD57oLMeTg5YnusZ0TWdSoP/XN5s9u6tUBfqn6gP8Nz6e/OH3VkHhCpsX53H7Y3R1+3duNZpsWlvrbq//Yls5nh8seWl1TOd0JgX65OSWwMMFUhXovXFnfvU3sz+9O/6TraBwRZ03u65RTdMee7zaDDn53P3sxtsnR+M/9uJH1RbMW7Pb2+U4ue/Tb1fDP/jWrB3bY7qnM9nSMH7Yd8Yf8AMPWE1VoFVl/mD+p3utP+3DYa9Ro9Cbgh+xn36P2G/UIBQUNfh17HfHjlH9birZYufR0m6kSdn9+UfzUdN2XXd7XYPPTAu4/hQ+3SDQ2EF0fnDQWMs9WT+mYzp1gV7q21LJtoH+r//67xcf2u/ufQ201xI4Gq28sfvd1DWtw/2VRM9H7DVqEEqKGvo69rzj6oLZccd9LkxDUPXSdL3z5KB5JFNdlPM10mrYpL3W3X68eu9n55OdlmN7zGT3/+Yxi+nUBXqpQ53yfBPp3T1uA71ZO6x+2TZ0a1veXNgwmdOGnW7qN60d0sfT75lYZ49Rz8b2Na1l/Z/7Dkult25a7QLtHnW2xwKN+Xz11tjyuSjDSl1dLzX/1CjQ1durH5o7dxZt3DxE6bev/lljzHFHga6dzuXPGJWlQO/ucy98/wIdjVbe2Es39S3Q8SI/XuZHF422vFj+qRpVu9hcoLMH3PYm7kgf0aUKdI9Rp09hHKeny69jf5M7NqfV/TouF2jHI54tT+sSoj5ffTX3vdefx5/t+pvm2uKa25cPxF8MW3+QfFeBrp1OY1U5UPoC/ez3323tULqsDAV6MX0bjH9Y3LT0Qz2qtripa1o3p2+88Q87p49oIAV6dhazEU7PTpdex/5WCnT6Qi6/jksF2vGIZ5OFaS/zGPf56uu8+YG5tRupaq5FYbULtOP284P2YaSLLardBfrwgzc7t5OunU5xBfrpy5Pj6L/+8erfPerQNY2lIWsLdHlao9HKG3t609K01tTGfNS4GOu3wenobNGWk3dE9XtjVN2f4/+vn4/Tm5M3XvX7xvltR+3xvFxuXOOZ2Hl6HU90YL6zsw2NcPn5Hf87eLp4HXea3qguvdFi3PSFrH5rPe5ha3rtR6xV/VlP6yx4Pi4W05q51PNySZNd3isHFlV2LNCVmjxeV6APfvs33749e7SVAl07nct/1zRxgd6b9Of3O/ozdoGORitv7PlN7WltL9BR9TYYl+ioUaCzEm0U6Nm0RDcX6M3Ze2/T/C5F7fG8XG7cJQq044kOzRe7QKtXcP467jK90bT0Fv+gTV7I+tfW4y4VaOsRa2fL09p9PuaGUaCf3Fop0FlJXbZATzoL9OF77UfcXqAnhRdoZ4XusgDPHS5ZP719Fejh4Wn1QKeTX6ePOFn9nPw6e6/Uq5+TXzcX6M3J9jMFujIuZoEezl7I2evYd3rLi9xk3OxzxKxAO0atPGL3tHacj6ZhFOjJSn+2jovfe4F+/tzSo13hAr37l3/91z+anJDpN8t/F/iG6LkGOhqtvLEbN7WmVVvdhjefVL0CkXYNdDlqj+flcuPCC7TjiQ7ON9Q10NF8rXH+D1rwGujKtHafj7lBFOjyl35qja9s7vsjfGOLwWNf+dvfde1Eujof4Sd+/3LXZtAdFuCmLAU63QY62rQN9NFsG+ijy28DvaYF+mhDf+6nQE8Xr+MO0+su0D7bQFuPWNtngV6s6c+kBbr05aPJDdNOi7ETqV7hfew7v/xw8seuAt24E6nAAp3sS9rTkfRrC7RlNFp5Y3fc1CzQ9buRT6s3QL0vdfy/6U372Au//hE7oka2cWPGJnuOGnOncv36tV/HnndslN7sjr32wnc8Yte0LmEAO+GPl1f3Ggd57ligfQ5jqqf+4sXqNPsexlRigdbbQvd0JGi/At1lWttqo9rWeXZ2eHax7TjQ6VHN+zkONK3gAt23mH1QH6p7uOUVWmv5CM/u13F5VNcjTm7aj+z92T5yvnZ80PzK5g4F2udA+qUObBwa3/NA+iILtDo50/4OBb1I+2XiTN9EYt8u99z3+Y5R2Kiitb+7WVuU2o4F2uernO0OfHh80FGgG7/KWWSBVqdXLrZAcz0iMTiZyF7Vu3Re6rit7qldC7THyURaa7z3f3rQWaCbTiZSRoF+8Yf/2Nxr1LtA+27aHmaB7m3DfBbXI/0wC7TY576xx2hhfoqkXQu0XnXsOA3dZE/VO7O7HtyoRlx88ErroKnFmLXTKaZAq4/szdOHKNACXI/0CnSvjg86rgU//8y8c4GuORHy7HSfX3q987DTl5bHbDihchkFWl8RqXEG0Htrvs65otgFqSZ9PtLnsOb0RrPdSDsX6MX9VvO1zng3rcr2N0e//OZB+2zJ0zrtnk4xBVqfgGmxyrncp+uVuiBNSJ+P9DmcHBx0nZ1jdtLj3Qv04uEr89q7sThaabbe+exFq0HHIxqd2BizZjrlFOinzWPn6/7sd0LQUhekCenzkT6D9snrlm5/IqhAG5cjbk3y/erqHY9NHuuDV6oLGz329GtLd26O6ZxOOQVaX9Pj6M6PxxX62a/rUzL1u6RHoQvSlPT5SE8CyQr0T3/Vui58vy2gpS9I0ucjPQmkOw603aA9+7PwBUn6fKQngYQH0n/xT/P6vPPjvncqe0GSPh/pSSDpN5E++/VfVu35vZ/3XP28KH1Bkj4f6Ukg01c5eyt7QZI+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk8DQCxRgsBQoQCAFChBIgQIEUqAAgRQoQCAFChBIgQIEUqAAgRQoMBjHBzdez51hFwoUGIrzAwUKEOKTWwoUIMT9bx4oUIAA1fqnAgXY3b/U/alAAXZ0/7mDAwUKsLOHr9Tl+eyxAgXYzXm97vnahQIFaDob2zKkKtBnPrpQoABNZ2fbG/T84Ol3qt8V6J6VfXEt6fORfiDOzno06IOPJr8r0D0re0GSPh/ph+HsrFeDTinQPSt7QZI+H+mHQYFmVfaCJH0+0g/DtS7Qh68+3+Xv3nrrrbd/lyRf2QuS9PlIPwzXukA//+bBBk+9Fj9f2QuS9PlIPxC79Of1KtCDg8ffiZ2v7AVJ+nykH4od+vO6FWj8mS17QZI+H+kHo39/XrUCffjbt16ZNuVTzz///LeenPbmY7dv35789KVfxc1X9oIkfT7Sl+iKFejFxXt1X7740ezP79fnTHmi+vH+4sd4yl6QpM9H+hJdtQKtv+P/5x81b6or9dn6x+P4q6BlL0jS5yN9ia5YgdbbQJ9duvG9+bbPhz/t+Ov9KntBkj4f6Ut0xQr0ZFyQX/5o+dbjeW2eRP8MX/aCJH0+0pfoihVoVZUvrdx6Pq/V6iImqwW7T2UvSNLnI32JrlaBVp/gO7ZxLm5eM2CPyl6QpM9H+hIp0D0re0GSPh/pS3QtCrT64K5A+5A+H+lLdLUKtN7LbhtoOOnzkb5EV6tA651IKwVZ1+pk3/t55176fSp7QZI+H+lLdMUK9Pyg40DP6til6XrpseNAN5I+H+lLdMUKtF7ZrK+Wt7jpjYP5aud7B50f8QGuhS1f5aw2co7/TXj67emfP3jl1vwkTJ8/dxD9EzzAcG07mcj5/MR18xMwjb24+CsroMB1tfWaSJN10K6TgJ50bSAFuDa2X1RustGzYbpJtNo+euPF2PkABqvPVTkf/sNz8/Z87IXZNs+H//cLb2+8G8DV1veyxg9++9bYh1GzABRl6NeFBxgsBQoQSIECBFKgAIH6FOiDD99a8UtfQAKuu60F+uCN1SPpE1wPHmDwtl4XvrM+FShAr+vCK1CADj2uC1+7veQpBQrszwevPFmdaOOpF4ravdLjhMo3nvldojDA9fTJ4uvi7RMQD9z2S3qUdYJooDwnrQ2Ej5fz+Xb7ReWcsA6IanlfSzmnad96WWMroEBUk30tT709rs0Hb94q6jzDIdeFT6nsi2tJn4/05ag/wM/OLVxfKqiYo3y2foRXoJcgfT7SF2NpU2G9PlrKpYK27kTK/BG+7AVJ+nykH5DRxr9d/qR7UtBn+O2HMeWdk7IXJOnzkX44RqONDVpdd+2Jxp/z105/268Ln/czfNkLkvT5SD8cWwr04sE/fOtqFmj9b0PWQwrKXpCkz0f6wRiNtjVo28mV2QY6/sdg3KCPv5YkSqeyFyTp85F+MHYs0AEc/NPflgJ98OH79WFZj33l+ba/SLRaWvaCJH0+0g/FaLRbg1YroE9sHzYMfU8mkutsTGUvSNLnI/1AjEa7NWi12bCcr+8o0Jikz0f6gdixQKv+LGYXkgKNS/p8pB+G0WinBq37s5yvwm87jOnV59ewDbQP6fORfhh2K9Dzwvpz8FflLHtBkj4f6QdhNNqlQU/KOhXThQKNS/p8pC/OwzeK608FGpX0+UhfmvqcIkWdjv5CgcYlfT7SF+aTsk4EOqVAY5I+H+nLUu8+uvHi9oHDokBjkj4f6YvyXn0tpHdyx9hZZ4FWRy/Vxyk5jOlypM9H+pKcl7f7aKKzQOff5ncg/eVIn4/0Bam3fz6TO0WIoRcocNUVfPlfBQrkVdT5l9qGvg0UuOK61tNKWR8d+l544Io77/iIq0ABejhWoABhrm6BPvztW2/9cmVr58N/eP52oZt8AfZn+wmVV/e3V7eWeMwrwF6FFqjDmIBrL6RAq68NKFDg2usu0IcfTnxQFejbH7Z98JwD6QHWFWjXgVlttoEC196aj/BdBxYUeZQBQDRrCnRydmgroADrrduJdLKpPh8r7LolADGs3Qu/difS71LGAxiukMOYALhQoADBtpxM5IGP7ABrOBsTQKChF2jZF9eSPh/pSSCwQB/8P67K2YP0+UhfmPuvPFkdIvkXZV0bvkeBVicFbXj1+edvu6xxP9LnI31RHr4yP8z88ZIqdGuBvvdk57H0CrQP6fORviT3m9eVu/FS7jj9bSvQN9Z8GUmB9iF9PtIXpL4wfKNBX88dqLctBbr2G52pvgxf9oIkfT7SF6TumcdfG5fKB/VH+XKuGLT9QPrqH4Tb9ef4x27fnv4D8UKy78KXvSBJn4/05ah75olpqbxX1Cro5gKtzwv65Xemq9jVlokHb6T9B6LsBUn6fKQvx3lro+DxtGuKsLlAj+czVq1jT84BWv0DkW7+yl6QpM9H+nIcHzTPMHx+UND5hjcWaL3eOZmV88V2z5OEm0ALX5Ckz0f6gvz21T9bfGg/uTJroNWmienWiMZpRRq3xlf2giR9PtIPw825vvc4vjLbQButWa2MzubqJOEqdtkLkvT5SD8MOxfoydXZC988m11jy251vY9Uc1j2giR9PtIPw24F+qD+4k5Bp9DcqUCfXdzsONA+pM9H+mHYoUBnV2Ir6YprW3cidXxuT3ma5bIXJOnzkX4YdijQ6dXUi7ri2vbDmKaf288XWyYUaF/S5yP9MOxeoEVV6OYCbWzPrVavp63Z+DG6shck6fORfhh2KNCT288//626QR8vZiPo5gKtN0q8WP/YOHgp5YGgZS9I0ucj/TDsvBf+vVslbQbdXKCTk6Q8XZ+f73g2W5MvrqYId1H6giR9PtIPw+7HgdarbaUcSb/lbEzni91i9Y+Pv/3h+7dSfpez7AVJ+nykH4bdC7S5v2Xwtp0P9PhgdvKQ1in7ilnDBgpT0tXUtxXow/rsS/XxS58vThpdzjetgMJU62pXpUAvLj54btaX95/Tn8C+PXz/283PtFerQKurys1mrv6eVcLTKQNX3vLpia5agQJE0zhtZu28oL0sChTI66R1ApHlPh00BQrk9Unz2Pm6P4vZzRJYoPf/SyGbKIDBq4+WvPHiuEIfvHnroKAV0MAC/ZdbpWzjBQbv8+cOWkrZArqtQD/88MOOW6vDmRQosC/tBi2nPzcU6MP6mKWDg8deXLq9PrRegQJ7M6mVyWHmL24fPhhrC/S9W/MZevyd1dsVKLBHD968XbXnU6+Vs/p5sb5AT5pr1ItdYvdfma1kK1DgultToOcHLbP1zX+ZrZYWdMpogEi6C3R65qXHX3jr1UllPtu4dekzPcA11V2g9YGtN16rf35vtgo6O5dIUdt4AaLpLtB6C+jsnMnnkz/cn57N7mmrnwCV7gKtvhgwPyV0/cn9idmn+teSRQMYts4CrctycdGO+iJy/6+dRwAtnQW6dH6+T2b73h8v5Rv+AAmsLdDGkfKzAn06w+pn2RfXkj4f6UmgT4FOL4aU5QQpZS9I0ucjPQn0L9A8J5gqe0GSPh/pSaB3gWY6QUrZC5L0+UhPAr0L9KWugfGVvSBJn4/0JNC3QHOdfansBUn6fKQnAQUak/T5SE8CCjQm6fORvkwnRZ2QXoFGJX0+0hepOuhcge5P2QuS9PlIX6KcR/wEUaAxSZ+P9CU6Luyacgo0Kunzkb5A56VdlHPDyUT+7q2Zf7zV+mPtl4nmsewFSfp8pC/P9KwbV6JAt0i1Rlr2giR9PtIXpzqN5r/5pgLdp7IXJOnzkX5ADnuNOhn3yv+nQPeq7AVJ+nykH5BeBTr+AH/j9c8V6F6VvSBJn4/0A9KnQKvWefbiShToxYMPt/ldonxlL0jS5yP9gPQp0OO6Oa9GgQ5H2QuS9PlIPyA9CvR88rFWge5X2QuS9PlIPyDbC7Q6gqk6ZaYCBWjZWqDVEUz1hdQVKMDEYdvacSez/dIKFKBl2xro+fw66goUoGVLgU6OYJr/qEAB5rYU6PGiNBUoQMvmAj1pfDFHgQK0bCzQ2RFMNQUK0LKxQE9yflf8shQoEJkCBQikQAFiUKAA+2AnEkAgBQoQSIECBFKgAIEUKEAgBQoQSIECXBMKFCDQ0Au07ItrSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0Junzkb4oS9c2fjZ3nr4UaEzS5yN9UY4V6Hb/+rPvHh0d3fnef/64913KXpCkz0f6kjz8qQLd5tO/Opr7ft8KLXtBkj4f6UtSXclDgW5096jpa7/pd6+yFyTp85G+JOfj0nwpd4gQyQr03lHb1/utg5a9IEmfj/QlOTk4uPF67hAhUhXon35Yteb3/vu4Nj/79cvVzz/odb+yFyTp85G+JMcHB1/6Ve4QIVIVaP0B/sfTP/yp2hr61d8kemhg2Kp9SCVdzHghUYF+8fetdc56ffQnaR4aGLhqH1Ix+41aEhVo1ZjNVc67vT/Dhzvc402jPT5iZP/GggAAABtaSURBVP2idtjn87XPZyL9Hfc5reCXI3jy/aImWzBPF9YPKnYfUqoC/fTlo6NvNP58L36Bjg5XF67Qt/po1Od90PGIXSHi6he16469nq+e89jrjuG5+tljR4SnD305giffL2q6BXPem5sKdLIP6f1vjXv0sRd+lyTXnqTaBvrZf/tRugI97f5X7+zs8GzzqHV33Po2uFk7rH7ZcNMaZ2OBM7R6x5B3bEfUfk9O8B37Cb5jZenV7nJzrmeKDTf1u2PHI15qHpde7X6LyWUecXenF6et3zsdHxx8+R+fmx0E+kxBW0MzfZXzbtRtoOMFY7xoHY4XruYicla9pc6ao2bv/uY/ktNRrTuORttq6TIFena2tUEnUW82o6654/ao/dJ3PBMdz1fnHTue1ZWb+gm+48Xqq92lb4GuhJi/HlsKdGVUZ4Eu/9DbyoLZEbVjMekcFc1p/f/Zb92Wv4f0eDk75PMU6PIm0T0b/2M3KdDmv3pnk7fUYkk6vTldkMY/NO5Yj2rfsV5ON74ZL1GgZ2fbG3QS9WYz6po77q1AV5+Jjuer644dz+rqTf0E37Hj1e7Ss0CrFO0Qs9djc66OUV0F2mcNrdPqgtkRtWMx6RoVz6Q9px26xvL3kAo6pClPgVYroN9YvvFRh647bx83fu+fVgV6Ojo7nY04m72l5kvS6c3JglT9Ph1U3bEaVf0+GzZdTMcL6obHbTbJ9K8aN22aj7O5DfM7iXpzEfVi8caYz1B1+zTqjs9fVw82nonZk9N4vlZn+9H6UR1PdL98HdPaOB+L6TVf7fXj2nW2blydohFi8XosZqhzPlZGzZ7pdoGOJ/eo/u+0/bjb5nexYC6mtYi6GLXSoB2jNj3uJZ22f+n0ya16vfPt8Uf3B2/WPz8RIUkUWQq02qV05xfLt256Q+w2rlr/PB0djkt0tLlAqwWp/m06qFrrOj07rH+bDZstpo1aWn3c+AV6c/Z2nD1uV4GuRO33/HUX6PyZmD05jedrdbYfrR/V8UT3y9cxrY3zEa1Ab542QsyDNWaocz5WRq0r0HF1Tjt0l9dtsWAuprWIOh/VWaDLozY97iX1WQOtzmV348XpH+rP88V8LSlHgVb92bELadMbYpdxh4enh2Onk18PD8d/fbhk3aj2TZPJ9SjQ5cl3P2L3fPQu0JuTTWr7L9DgJ6dztjtGrUyr3+vb/XL0WA46cnW/bj0K9HCWYhFi/nrc7FGgrVFrC/TR4pf+r9tygS5HnY5aWky6R2163Evqsw304oNX/2xxFFPdoKUcFZqhQOv+7Pgq/No3xM7j6lXPfa2BjkYbGnQ2qLEqNhvVumn9fOxzDXQ1ar/nrxl19uTsugY6Wj/KGmiUNdDGqz2f1iDXQHfexlsdFVrK95LSF+i9Nf253wKdbgNdFOij2VtqMapjG+ij2Za/i1QF+qjZn7tsA13ZO7DfAr2YPROPGgW6YRvoaP2oDNtAmzuR1o/rXaCD3AbaXaArWzdX+jP1NtDdjzKo9imVshspeYHe3eFUTKFOq+qs98KP/ze/9Wz5MKZee+FHo44FdUWzSUZrb+q2vHx3zVDXXviVO/aL2i/9lr3w6+dxy174nXIF3/Fij4cxjRo7ref/vPTZCz9qjJrdsatAA/fCd7zaXVE7FpPOUdEEHHVafYZXoJ2++KcE/Vn/Wzc5jnrzgfSzd3/rH8nOO/Z7K0Y8kH72vtsxVz8dUTueibKOA93ngfQrIQZyHGjHIfJdz1e/UQOiQNepzynS/3T0odZ+g+Vwy6hLffUl4nfhL5mrn+AnJ9qzuv+XI0RHiH659jkqOGrkR4xCga7x6Q4nAr28QZz2Iv3JRII5mUiiaUU2sJOJ9FBt82zuNFr+85ClLNB699GdH28fuB+DeKsPaTndQoEmmlZk5RVotcbZPPDzpKAj6RMW6O/rayH9c7oHBErQbsxqBdSB9Cvupdh9BBSn/irn7ND5+98s6DDQdAVab//8fqpHA8pxXH8X/rXqu/Bv3Crpm5zJCnTpmh69xTq8Nw3p85G+IMVeFj7pReVWzr/UQ9kLkvT5SF+SyfmYyuvPlNdEWtZrfbTsBUn6fKQvysNXFqdTfi13mB0kKtB7q/2pQIdO+nzKTh/k/t/crrZ+fqWk+kxWoO8q0PJIn0/Z6a8RBRqT9PlITwKZLirXW9kLkvT5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJYOgFCjBYChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQINvUDLvriW9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSGHqBAgyWAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEBDL9CyL64lfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4Ehl6gAIOlQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUIJACBQikQAECKVCAQAoUINDQC7Tsi2tJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCeBoRcowGApUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCKRAAQIpUIBAChQgkAIFCDT0Ai374lrS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJwEFGpP0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6Ulg6AUKMFgKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAg29QMu+uJb0+UhPAgo0JunzkZ4EFGhM0ucjPQko0Jikz0d6ElCgMUmfj/QkoEBjkj4f6UlAgcYkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CWQo0HeP7vyi9+CyFyTp85GeBNIX6L0jBVoG6fMpO/01krxAP31ZgRZC+nzKTn+NpC7QP/7wSIEWQvp8yk5/jSQu0Gr9U4EWQvp8yk5/jaQt0P9Z96cCLYP0+ZSd/hpJWaB//KujIwVaDunzKTv9NZKuQL/4WV2eP3j38gV6uNdgfQQ+4iXeBh2PGPmmFY8ejeK+iQNz9btjZ/rgyaf26NFhr/TFzNBVla5A79Xrnj+/uHyBjg5H+422XfIC7ZrH1RDBo3o9hY9Go1HMAg3N1e+OXemDJ5/co3GIPul7LZhDmKGrKm2Bfv/jix0LdMlpw/pRNxd2u2PwI+7T2kc83DJqnzfVxhUUGHXF2djO6fs9Ys9p9Yvae4b6WZrtnvqlzzJDLElZoP/hn6vfL1mgVSsejv/buUBnt+xcoH0ecZ/WPuLhllGXuOli5aeLuj+3NOiaO646O2tXSb9cnY/Yfx7br3Z929bXsd+ovpZnu6eOEP1u6jct9ihdgX728eT3yxXozenyMP5h/aiuAr05fU9tvGPwI+7T2kc83DIq/KaL06Ufaj0KtPuOK87OlqqkX66uR9xhHtuvdn3b1tex36ieVma7p44Q/W7qNy32KP1XOdcW6KMOy2NOb06Wh+r39eMaBTobMLlj/cvygrT5cdc9Yne+vvOxaVzzEVvjDpvjlkeNx3VEXR3VNUOnjyb9d3rR7MHRxKb5qO9QT+DR6YZxZ3Ptl2Nbro7p7TKP01e7OWx2x7WvR2vUJV/f1dnuOb1GiNZ8t5+cjlEd01s3qv98sEl5BVotD/Vv68d1F+jN6dtq5wLtfMRd3hA7F+j8EVvjlgu0NWpSoMtRV0d1zdDpo3l5Lp6c0aijQZdfjuq/SXnuXKA9cnVMb5d5nL7azWGzO659PVqjMhboLERrvttPTseojumtG6VA96OoAj08PD0cO538eni4btyaAr052TS2y4K0/hF3eUPsMm75EcfjDpeMx62O6orab9SkQKdbMXcv0PEdJ9NYP265SfrmWplev3mc1M381Z484uFswGLUyuuxPCpLgXZEXc21aYY2T2v3+WCTogrUGuhiXOw10NGoq0GXX44La6DrX19roNdAeQXauaGsPco20MtvA+1boH22gV6sFEm/XB3T22Uec28DfbQy27aBXjkDKtAeRs09rut3EDcKdHZToXvhW/O4di/8aG3ULaNmN63uTB81rY/acy/86mFMvXJ1PWK/GWq82tObRo3d0esn329Ub2E74TtCdOXqtX99zzPEsrIK1HGgm0bt+zjQPlH73nHlQPo+uTofsf88tl/tLIdNhh5IvxLCcaADVVyBBn6xIv0dg619xOTfRAqPGnDHftMKn6F+UUNnaK/6pS9ohq6wwgp0opiTiez3EVOfTCS6qCcT6XvH4FGR7fN1HMQMXU0KtJxHVKAx7hg8KjIFWoQiCxRgCBQoQCAFChBIgQIEUqAAgRQoQCAFChBo6AVa9ikOpM9HehJQoDFJn4/0JJC+QHdT9oIkfT7Sk4ACjUn6fKQnAQUak/T5SE8CCjQm6fORngQUaEzS5yM9CSjQmKTPR3oSUKAxSZ+P9CSgQGOSPh/pSUCBxiR9PtKTgAKNSfp8pCcBBRqT9PlITwIKNCbp85GeBBRoTNLnIz0JKNCYpM9HehJQoDFJn4/0JKBAY5I+H+lJQIHGJH0+0pOAAo1J+nykJ4GhFyjAYClQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCDQoAv0iz/86OWjozvf+/nHuZPs5t2jO79o31LGnPzrz757VKX8z0spy0j/xzr9v/1P/7x0exnpp+4eHX29lbOo9NfQkAv00786mvraL7aPHo57R8sFWsScLEIeHX3/486/GHD6L342D/+1VoUWkX7m05eXCrSo9NfRgAv03lHDj3On6a96E7QLtIg5udsMefS138z/ooj0f/xhI+Sdnyz+ooj0M3+q5qJZoEWlv5aGW6BVDzXeE8X8+1u/lVtxi5iT1lu1+TYuIv0Xf3/UnbKI9HPvtp750tJfS4Mt0Potcef7///FxWf/tLRYDdpkmW8u60XMSb3uc/S9/z7O9tmv61n4weQvikg/WX3+WrWd8F/rj/LfmN5eRvqZe+1/ugpLfz0NtkDvNWroXvWO/snm8QPxP19eWVkoYk7uNj8j/qna8PbV39Q/F5G+rv9vTOvl983EJaSfma5vLmqyqPTX1FALtP7Hd7683Cvkn98/zjb5Nwq0iDmpQ/5g/se6kH4y/4uhp69zTQv/YvJBeBK5jPRTVdh/98NGxKLSX1dDLdD27shqURr+FqDpjuAfvNsKW8ScVI25aKDJCmndp0WkrytzUf/35n8qI/3U+Dn/6v/44dLW52LSX1dDLdB7rbdE/YYe/OeXehPWnZ9ftAu0iDmp3qvfaPx5HrqI9BcX/+u//vvFM74IWUj62vgluPOLPzULtKT019ZQC/Td9tKy/AYfpGqBrw6gbBdoGXPy2X/7UWeBlpG+bfH8F5S+qs4fXLQKtKD019dAC3T580prwRqqe0f/oT6Eu1WgRc7JfG2nxPR353vhS0r/bh2tmbCk9NfXgAu0uU2uiIXns2nAlQItbk7mm0SLS//Z77+72KFUUPp7k6TLBVpI+mtsoAW6vLAsL0yD1irQIudkvhJXVvrZceezxOWkr5JXa/zNxOWkv84U6P4VX6CLL6OWlX76bar5F/mLSV8FW/kHq5j015oC3b/SC7RekZvs/i0r/fzrqNMKLSb93VkuBVoaBbp/hRdo3Z9fL6yCanf/8q//+kd1g07OhVJK+sXpuxRoaRTo/pVdoPdeLnIr4sLv5zNQSPrJEUzzH0t+7q8fBbp/RRfo3dbXsUtLX/t09rXxQtK/212ahaS/5hTo/hVcoF8snfWnrPQz96YHEZSR/m4jlAItzUALtOhj4Mo9DnRyWs3G6eiLSj83O4y1iPSzI5hqjgMtzUALtCqhYheela9yljInnzZPBDpRUPqFefWUkL59JYCpYtJfe0Mt0KUzJ8w+lBWhXaDlzEm9++hO+8IRZaT/4g//sfPDbgnp1xdoCemvvaEWaMlnoinwbEyV39fH/yxd07KI9NW62fI1AOoKKiH9+gItIf21N9QCLflciAWeD/RiehT6ykfEItIvnQ56ce7hEtKvL9AS0l97Qy3Qks/G3S7QQuak3v75/ZWby0h/96i5uXDRp2Wkb2ht5ywu/XU01AKdXA9muvQUdj2YdoGWMSfLK3FzRaRvfnlqeim2yQtQRPqG9o6i0tJfR4Mt0OkRNSVekfDd1S1yg5+TxUk0lxSRfnI94Ds/7r6m6ODTL7QLtLT019FgC3TpQuUlbf1ZKtAS5mRyVeO2aQcVkH56HdGG1mUxBp9+YelQpcLSX0fDLdD21vUfbx8/GMsFWsCctN+prQItIP3FcoM2OqiI9HPLx3qWlf46GnCBXvzh5TL/7V0p0OHPybsbCnT46SuTL6FOUraapoj0MysHyxeV/joacoFefPGHH1Wn9v3ez8va9rNaoIOfk40FOvj0E5/9+i+PulKWkX5i9dtGJaW/jgZdoABDpkABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpECpff7Ng2W3n/rO27tN5P7vZj8dj+//pV/tIddikjA8CpRaR4FWbjzzUe9JPHzjxuuzn/dUoM1JwvAoUGprCnRcoX0b7L1bB/su0NYkYXgUKLW1Bdq3wk5aQ/dSoCe79DdkoECp1QXarrwP33uybtB+RahAuYYUKLWOAq02QdYN+myfCURoOwXK0ClQap0FOlmT7LcqqUC5hhQotTUF+smtqkFf6jEBBco1pECprSnQySpon8/wCpRrSIFSW1egVYkdPNG44YNXb9drpTduf+ed5YEb2u7h+9+udkndeOq1zgNLH77/repvn35th0lCdgqU2sYC/fKs9B6+cat5hNPjrzXuPFMPXtoL//DNxf1ax+YfT9Zv35v/9eOvr5skDI8CpdZrDfSTVn1WnlnceUOB3n+udafHF6uukwJ9o/m3L62ZJAyPAqXWp0DPV/pzWndbCnSld9vHiz570vGXCpQSKFBqawr04U8PDmY7kaad9vTbVZ09eH+yVlnfZXOBTv72xtPVmUk+eGVxr4vpuK/cqjYGjO/1wWSST1x0ThKGR4FS23QY03SF8aS98rj057XfRJp08Pxj++Tj/BONcWN//lFjkvMUdiIxdAqUWneBTspvsgI4+bl5SGjrEKe1BXq+tA45Wbd8qTGJxV7+9mMoUIZOgVLrLND7P11s55ysjLY+TJ/3KdC6E1s1WE/oicW45sOerJ8kDI8CpbZaoB/Wh2Y21g8f/OOrT7YOqa+bcFuBtgbV6kqdPtRxawV04yRheBQotfWns3t87Tfh6/tsK9COFjxZrNYeL20WaK6dKlAGT4FSW1ugG/aA9yrQjhPbNVYzlwu0nqQCpRQKlNqaAn38tXV3ePjbV2/12AZaf15fKuFGSx4vdaQCpSgKlNpqgd64/fzfda19Pvzwrb/59u35sC0FumXNVoFSNAVKbd03kZbMdiwtXL5Am4+qQCmKAqXWq0Df6/guZ2iBdm8hVaAURYFS61GgD1vn/Dh46oUPeuxEsgbKVaZAqfUo0ONZ991+/m9/+buLfnvhW43YPU0FSrEUKLXtBTo5p9JjLy59KTNgL3yDAqVoCpTa9gI9Pliuwj7fRGp+7WjNRBUoxVKg1LYWaD2gXWe9vgvf+NpRBwVK0RQota0FunoukfYX2dcV6Hlz0MT5ja/87dvL4xoxFCilUKDUAgp0slF0W4GurrlOzln3xNK4RgwFSikUKLXdP8LfnxygtK1Al06SPLthOlSBUjQFSm1rgTbPrVyZHVTfbLvFts6VM9J/aX4huZPm3bYW6PrNp5CfAqW2fS/8pPhuvFAdAfrhm0+2D4ifbuusavLD6k/NYpxeU66+llLrUkoXWwq0PUkYHgVKbXuBTtYkVyzV5PSGVjGer9xp/sF8Y4G2JwnDo0Cp9fgm0vK3Mm+80DyX0rxf6xvaxbh8XePObaWLx5gVaHuSMDwKlFqfk4k8fKVVnx9NVi1nGyk/f276N9UNS8XY+hr9jWcW+/I3Fmh7kjA8CpRav9PZPXizPhHojae+8/b8TvP9Sg8n57q7/eJFx3noH77/7Xqz6e2nW6do3lygrUnC8ChQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUIpEABAilQgEAKFCCQAgUI9L8B8zwAbMAUxq0AAAAASUVORK5CYII=" width="672" /></p>
 </div>
 <div id="expectation-maximization-em" class="section level3">
 <h3>Expectation-Maximization (EM)</h3>
+<label for="tufte-mn-3" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-3" class="margin-toggle"><span class="marginnote"><span style="display: block;">Code for the EM algorithm:</span> <span style="display: block;">DS_em &lt;- function(J, K, N, I, ii, jj, y){ ##### EM ALGORITHM #####</span> <span style="display: block;">### INITIALIZATION theta_hat &lt;- array(NA,c(J,K,K)); for (j in 1:J) for (k in 1:K) for (k2 in 1:K) theta_hat[j,k,k2] &lt;- ifelse(k==k2, 0.7, 0.3/K);</span>
+<pre><code>  pi_hat &lt;- array(1/K,K);
+  
+  ### EM ITERATIONS
+  epoch &lt;- 1;
+  min_relative_diff &lt;- 1E-8;
+  last_log_posterior = - Inf;
+  E_z &lt;- array(1/K, c(I,K));
+  MAX_EPOCHS &lt;- 100;
+  for (epoch in 1:MAX_EPOCHS) {
+    ### E step 
+    for (i in 1:I)
+      E_z[i,] &lt;- pi_hat;
+    for (n in 1:N)
+      for (k in 1:K)
+        E_z[ii[n],k] &lt;- E_z[ii[n],k] * theta_hat[jj[n],k,y[n]];
+      for (i in 1:I)
+        E_z[i,] &lt;- E_z[i,] / sum(E_z[i,]);
+      
+      ### M step
+      beta &lt;- 0.01; 
+      pi_hat &lt;- rep(beta,K);          # add beta smoothing on pi_hat
+      for (i in 1:I)
+        pi_hat &lt;- pi_hat + E_z[i,];
+      pi_hat &lt;- pi_hat / sum(pi_hat);
+      
+      alpha &lt;- 0.01;
+      count &lt;- array(alpha,c(J,K,K)); # add alpha smoothing for theta_hat
+      for (n in 1:N)
+        for (k in 1:K)
+          count[jj[n],k,y[n]] &lt;- count[jj[n],k,y[n]] + E_z[ii[n],k];
+        for (j in 1:J)
+          for (k in 1:K)
+            theta_hat[j,k,] &lt;- count[j,k,] / sum(count[j,k,]);
+          
+          p &lt;- array(0,c(I,K));
+          for (i in 1:I)
+            p[i,] &lt;- pi_hat;
+          for (n in 1:N)
+            for (k in 1:K)
+              p[ii[n],k] &lt;- p[ii[n],k] * theta_hat[jj[n],k,y[n]];
+            log_posterior &lt;- 0.0;
+            for (i in 1:I)
+              log_posterior &lt;- log_posterior + log(sum(p[i,]));
+            if (epoch == 1)
+              print(paste(&quot;epoch=&quot;,epoch,&quot; log posterior=&quot;, log_posterior));
+            if (epoch &gt; 1) {
+              diff &lt;- log_posterior - last_log_posterior;
+              relative_diff &lt;- abs(diff / last_log_posterior);
+              print(paste(&quot;epoch=&quot;,epoch,
+                          &quot; log posterior=&quot;, log_posterior,
+                          &quot; relative_diff=&quot;,relative_diff));
+              if (relative_diff &lt; min_relative_diff) {
+                print(&quot;FINISHED.&quot;);
+                break;
+              }
+            }
+            last_log_posterior &lt;- log_posterior;
+  }
+  
+  
+  sum(apply((E_z&gt;.99),FUN = purrr::has_element, MARGIN = 1, .y=TRUE)) / I
+  
+  # VOTED PREVALENCE AS A SANITY CHECK; compare to estimates of pi
+  voted_prevalence &lt;- rep(0,K);
+  for (k in 1:K)
+    voted_prevalence[k] &lt;- sum(y == k);
+  voted_prevalence &lt;- voted_prevalence / sum(voted_prevalence);
+  print(paste(&quot;voted prevalence=&quot;,voted_prevalence));
+  
+  pi_out &lt;- array(0,dim=c(K,2),dimnames=list(NULL,c(&quot;category&quot;,&quot;prob&quot;)));
+  pos &lt;- 1;
+  for (k in 1:K) {
+    pi_out[pos,] &lt;- c(k,pi_hat[k]);
+    pos &lt;- pos + 1;
+  }
+  
+  theta_out &lt;- array(0,
+                     dim=c(J*K*K,4),
+                     dimnames=list(NULL,c(&quot;annotator&quot;,&quot;reference&quot;,
+                                          &quot;response&quot;,&quot;prob&quot;)));
+  pos &lt;- 1;
+  for (j in 1:J) {
+    for (ref in 1:K) {
+      for (resp in 1:K) {
+        theta_out[pos,] &lt;- c(j,ref,resp,theta_hat[j,ref,resp]);
+        pos &lt;- pos + 1;
+      }
+    }
+  }
+
+  z_out &lt;- array(0,dim=c(I*K,3),
+                 dimnames=list(NULL,c(&quot;item&quot;,&quot;category&quot;,&quot;prob&quot;)));
+  pos &lt;- 1;
+  for (i in 1:I) {
+    for (k in 1:K) {
+      z_out[pos,] = c(i,k,E_z[i,k]);
+      pos &lt;- pos + 1;
+    }
+  }
+  
+  output &lt;- list(pi_out = pi_out,
+                 beta_out = theta_out,
+                 c_out = z_out)</code></pre>
+<p><span style="display: block;">}</span></span></p>
+<pre class="r"><code>DS_em &lt;- function(J, K, N, I, ii, jj, y){
+  ##### EM ALGORITHM #####
+  
+  ### INITIALIZATION
+  theta_hat &lt;- array(NA,c(J,K,K));
+  for (j in 1:J)
+    for (k in 1:K)
+      for (k2 in 1:K)
+        theta_hat[j,k,k2] &lt;- ifelse(k==k2, 0.7, 0.3/K);
+      
+      pi_hat &lt;- array(1/K,K);
+      
+      ### EM ITERATIONS
+      epoch &lt;- 1;
+      min_relative_diff &lt;- 1E-8;
+      last_log_posterior = - Inf;
+      E_z &lt;- array(1/K, c(I,K));
+      MAX_EPOCHS &lt;- 100;
+      for (epoch in 1:MAX_EPOCHS) {
+        ### E step 
+        for (i in 1:I)
+          E_z[i,] &lt;- pi_hat;
+        for (n in 1:N)
+          for (k in 1:K)
+            E_z[ii[n],k] &lt;- E_z[ii[n],k] * theta_hat[jj[n],k,y[n]];
+          for (i in 1:I)
+            E_z[i,] &lt;- E_z[i,] / sum(E_z[i,]);
+          
+          ### M step
+          beta &lt;- 0.01; 
+          pi_hat &lt;- rep(beta,K);          # add beta smoothing on pi_hat
+          for (i in 1:I)
+            pi_hat &lt;- pi_hat + E_z[i,];
+          pi_hat &lt;- pi_hat / sum(pi_hat);
+          
+          alpha &lt;- 0.01;
+          count &lt;- array(alpha,c(J,K,K)); # add alpha smoothing for theta_hat
+          for (n in 1:N)
+            for (k in 1:K)
+              count[jj[n],k,y[n]] &lt;- count[jj[n],k,y[n]] + E_z[ii[n],k];
+            for (j in 1:J)
+              for (k in 1:K)
+                theta_hat[j,k,] &lt;- count[j,k,] / sum(count[j,k,]);
+              
+              p &lt;- array(0,c(I,K));
+              for (i in 1:I)
+                p[i,] &lt;- pi_hat;
+              for (n in 1:N)
+                for (k in 1:K)
+                  p[ii[n],k] &lt;- p[ii[n],k] * theta_hat[jj[n],k,y[n]];
+                log_posterior &lt;- 0.0;
+                for (i in 1:I)
+                  log_posterior &lt;- log_posterior + log(sum(p[i,]));
+                if (epoch == 1)
+                  print(paste(&quot;epoch=&quot;,epoch,&quot; log posterior=&quot;, log_posterior));
+                if (epoch &gt; 1) {
+                  diff &lt;- log_posterior - last_log_posterior;
+                  relative_diff &lt;- abs(diff / last_log_posterior);
+                  print(paste(&quot;epoch=&quot;,epoch,
+                              &quot; log posterior=&quot;, log_posterior,
+                              &quot; relative_diff=&quot;,relative_diff));
+                  if (relative_diff &lt; min_relative_diff) {
+                    print(&quot;FINISHED.&quot;);
+                    break;
+                  }
+                }
+                last_log_posterior &lt;- log_posterior;
+      }
+      
+      
+      sum(apply((E_z&gt;.99),FUN = purrr::has_element, MARGIN = 1, .y=TRUE)) / I
+      
+      # VOTED PREVALENCE AS A SANITY CHECK; compare to estimates of pi
+      voted_prevalence &lt;- rep(0,K);
+      for (k in 1:K)
+        voted_prevalence[k] &lt;- sum(y == k);
+      voted_prevalence &lt;- voted_prevalence / sum(voted_prevalence);
+      print(paste(&quot;voted prevalence=&quot;,voted_prevalence));
+      
+      pi_out &lt;- array(0,dim=c(K,2),dimnames=list(NULL,c(&quot;category&quot;,&quot;prob&quot;)));
+      pos &lt;- 1;
+      for (k in 1:K) {
+        pi_out[pos,] &lt;- c(k,pi_hat[k]);
+        pos &lt;- pos + 1;
+      }
+      
+      theta_out &lt;- array(0,
+                         dim=c(J*K*K,4),
+                         dimnames=list(NULL,c(&quot;annotator&quot;,&quot;reference&quot;,
+                                              &quot;response&quot;,&quot;prob&quot;)));
+      pos &lt;- 1;
+      for (j in 1:J) {
+        for (ref in 1:K) {
+          for (resp in 1:K) {
+            theta_out[pos,] &lt;- c(j,ref,resp,theta_hat[j,ref,resp]);
+            pos &lt;- pos + 1;
+          }
+        }
+      }
+
+      z_out &lt;- array(0,dim=c(I*K,3),
+                     dimnames=list(NULL,c(&quot;item&quot;,&quot;category&quot;,&quot;prob&quot;)));
+      pos &lt;- 1;
+      for (i in 1:I) {
+        for (k in 1:K) {
+          z_out[pos,] = c(i,k,E_z[i,k]);
+          pos &lt;- pos + 1;
+        }
+      }
+      
+      output &lt;- list(pi_out = pi_out,
+                     beta_out = theta_out,
+                     c_out = z_out)
+}
+
+fit_DS_em &lt;- DS_em(J  = 5,
+                   K  = 4,
+                   N  = 315,
+                   I  = 45,
+                   ii = data$item,
+                   jj = data$annotator,
+                   y  = data$rating)</code></pre>
+<pre><code>[1] &quot;epoch= 1  log posterior= -196.605336328731&quot;
+[1] &quot;epoch= 2  log posterior= -196.08403640895  relative_diff= 0.00265150442767998&quot;
+[1] &quot;epoch= 3  log posterior= -195.855776716455  relative_diff= 0.00116409115538046&quot;
+[1] &quot;epoch= 4  log posterior= -195.630626107956  relative_diff= 0.00114957348858486&quot;
+[1] &quot;epoch= 5  log posterior= -195.390477713742  relative_diff= 0.00122756032116213&quot;
+[1] &quot;epoch= 6  log posterior= -195.03611628426  relative_diff= 0.00181360644401904&quot;
+[1] &quot;epoch= 7  log posterior= -194.595014585666  relative_diff= 0.00226164111036506&quot;
+[1] &quot;epoch= 8  log posterior= -194.38202291923  relative_diff= 0.00109453814574469&quot;
+[1] &quot;epoch= 9  log posterior= -194.361375669397  relative_diff= 0.000106219955543778&quot;
+[1] &quot;epoch= 10  log posterior= -194.361213786189  relative_diff= 8.32898036344518e-07&quot;
+[1] &quot;epoch= 11  log posterior= -194.361252761141  relative_diff= 2.00528448624108e-07&quot;
+[1] &quot;epoch= 12  log posterior= -194.36126946481  relative_diff= 8.59413516096108e-08&quot;
+[1] &quot;epoch= 13  log posterior= -194.361276352259  relative_diff= 3.54363226156395e-08&quot;
+[1] &quot;epoch= 14  log posterior= -194.361279190641  relative_diff= 1.46036380578875e-08&quot;
+[1] &quot;epoch= 15  log posterior= -194.361280360383  relative_diff= 6.01839423493832e-09&quot;
+[1] &quot;FINISHED.&quot;
+[1] &quot;voted prevalence= 0.403174603174603&quot; 
+[2] &quot;voted prevalence= 0.396825396825397&quot; 
+[3] &quot;voted prevalence= 0.152380952380952&quot; 
+[4] &quot;voted prevalence= 0.0476190476190476&quot;</code></pre>
+<pre class="r"><code>fit_DS_em$pi_out</code></pre>
+<pre><code>     category  prob
+[1,]        1 0.400
+[2,]        2 0.467
+[3,]        3 0.111
+[4,]        4 0.022</code></pre>
+<pre class="r"><code>c.matrix &lt;- round(t(matrix(fit_DS_em$c_out[,3], ncol = 45, nrow = 4)),2)
+c.matrix</code></pre>
+<pre><code>      [,1] [,2] [,3] [,4]
+ [1,] 1.00 0.00    0    0
+ [2,] 0.00 0.00    1    0
+ [3,] 0.01 0.99    0    0
+ [4,] 0.00 1.00    0    0
+ [5,] 0.00 1.00    0    0
+ [6,] 0.00 1.00    0    0
+ [7,] 0.99 0.01    0    0
+ [8,] 0.00 0.00    1    0
+ [9,] 0.00 1.00    0    0
+[10,] 0.00 1.00    0    0
+[11,] 0.00 0.00    0    1
+[12,] 0.00 1.00    0    0
+[13,] 1.00 0.00    0    0
+[14,] 0.00 1.00    0    0
+[15,] 1.00 0.00    0    0
+[16,] 1.00 0.00    0    0
+[17,] 1.00 0.00    0    0
+[18,] 1.00 0.00    0    0
+[19,] 0.00 1.00    0    0
+[20,] 0.00 1.00    0    0
+[21,] 0.00 1.00    0    0
+[22,] 0.00 1.00    0    0
+[23,] 0.00 1.00    0    0
+[24,] 0.00 1.00    0    0
+[25,] 1.00 0.00    0    0
+[26,] 1.00 0.00    0    0
+[27,] 0.00 1.00    0    0
+[28,] 1.00 0.00    0    0
+[29,] 1.00 0.00    0    0
+[30,] 1.00 0.00    0    0
+[31,] 1.00 0.00    0    0
+[32,] 0.00 0.00    1    0
+[33,] 1.00 0.00    0    0
+[34,] 0.00 1.00    0    0
+[35,] 0.00 1.00    0    0
+[36,] 0.00 0.00    1    0
+[37,] 0.00 1.00    0    0
+[38,] 0.00 1.00    0    0
+[39,] 0.00 0.00    1    0
+[40,] 1.00 0.00    0    0
+[41,] 1.00 0.00    0    0
+[42,] 1.00 0.00    0    0
+[43,] 0.00 1.00    0    0
+[44,] 1.00 0.00    0    0
+[45,] 0.00 1.00    0    0</code></pre>
+<pre class="r"><code>for(mat in 1:5) print( round(t(matrix(fit_DS_em$beta_out[(((mat-1)*16)+1):(mat*16) ,4],ncol=4)), 2))</code></pre>
+<pre><code>     [,1] [,2] [,3] [,4]
+[1,] 0.89 0.11 0.00 0.00
+[2,] 0.06 0.87 0.06 0.00
+[3,] 0.00 0.00 0.93 0.07
+[4,] 0.00 0.00 0.00 0.99
+     [,1] [,2] [,3] [,4]
+[1,] 0.83 0.17 0.00 0.00
+[2,] 0.05 0.57 0.38 0.00
+[3,] 0.00 0.00 0.60 0.40
+[4,] 0.01 0.01 0.01 0.97
+     [,1] [,2] [,3] [,4]
+[1,] 1.00 0.00 0.00 0.00
+[2,] 0.10 0.76 0.14 0.00
+[3,] 0.00 0.20 0.40 0.40
+[4,] 0.01 0.01 0.01 0.97
+     [,1] [,2] [,3] [,4]
+[1,] 0.94 0.06 0.00 0.00
+[2,] 0.05 0.76 0.14 0.05
+[3,] 0.00 0.00 0.80 0.20
+[4,] 0.01 0.01 0.01 0.97
+     [,1] [,2] [,3] [,4]
+[1,] 1.00 0.00 0.00 0.00
+[2,] 0.14 0.67 0.19 0.00
+[3,] 0.00 0.20 0.60 0.20
+[4,] 0.01 0.01 0.01 0.97</code></pre>
 <ul>
 <li>Note, we find different results from the original paper.</li>
 </ul>
@@ -127,11 +456,12 @@ loaded via a namespace (and not attached):
 [16] yaml_2.2.0         xfun_0.4           loo_2.0.0         
 [19] stringr_1.3.1      stats4_3.5.1       rprojroot_1.3-2   
 [22] grid_3.5.1         inline_0.3.15      R6_2.3.0          
-[25] processx_3.2.0     rmarkdown_1.10     callr_3.0.0       
-[28] magrittr_1.5       matrixStats_0.54.0 ps_1.2.1          
-[31] backports_1.1.3    scales_1.0.0       htmltools_0.3.6   
-[34] assertthat_0.2.0   colorspace_1.3-2   stringi_1.2.4     
-[37] lazyeval_0.2.1     munsell_0.5.0      crayon_1.3.4      </code></pre>
+[25] processx_3.2.0     rmarkdown_1.10     purrr_0.2.5       
+[28] callr_3.0.0        magrittr_1.5       codetools_0.2-15  
+[31] matrixStats_0.54.0 ps_1.2.1           backports_1.1.3   
+[34] scales_1.0.0       htmltools_0.3.6    assertthat_0.2.0  
+[37] colorspace_1.3-2   stringi_1.2.4      lazyeval_0.2.1    
+[40] munsell_0.5.0      crayon_1.3.4      </code></pre>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2>References</h2>
