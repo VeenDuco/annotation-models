@@ -57,6 +57,11 @@ data.simulation <- function(I, K, J, D, missing){
 nsim <- 10
 J = 10
 I = 500
+K = 2
+D = 20
+missing = .5
+nchains = 4
+
 # create output for simulations
 predictors.overview <- list(
   simulated.predictors = matrix(NA, nrow = 21, ncol = nsim),
@@ -91,12 +96,12 @@ z_overview <- list(
 set.seed(13031990)
 for(sim in 1:nsim){
 print(paste0("Start of simulation ", sim, "out of ", nsim, "."))  
-sim.data <- data.simulation(I = 500, K = 2, J = 10, D = 20, missing  = .5)
+sim.data <- data.simulation(I = I, K = K, J = J, D = D, missing  = missing)
 
-w_init <- rnorm(20)
+w_init <- rnorm(D)
 w0_init <- rnorm(1)
-alpha_init <- rep(.8, 10)
-beta_init <- rep(.8, 10)
+alpha_init <- rep(.8, J)
+beta_init <- rep(.8, J)
 
 init_fun <- function(n) {
   list(alpha = alpha_init,
@@ -113,7 +118,7 @@ fit_DS_predictors <- sampling(object = model_predictors, data = list(J = sim.dat
                                                                      y = sim.data$sim.data$rating,
                                                                      ii = sim.data$sim.data$item,
                                                                      jj = sim.data$sim.data$annotator),
-                              seed = 13031990, chains = 4, init = init_fun)
+                              seed = 13031990, chains = nchains, init = init_fun)
 
 
 print(paste0("Halfway of simulation ", sim, "out of ", nsim, "."))
@@ -122,11 +127,11 @@ fit_DS_blank_predictors <- sampling(object = model_predictors, data = list(J = s
                                                                            I = sim.data$I,
                                                                            D = sim.data$D,
                                                                            N = sim.data$N,
-                                                                           x = matrix(0, nrow = 500, ncol = 20),
+                                                                           x = matrix(0, nrow = I, ncol = D),
                                                                            y = sim.data$sim.data$rating,
                                                                            ii = sim.data$sim.data$item,
                                                                            jj = sim.data$sim.data$annotator),
-                                    seed = 13031990, chains = 4, init = init_fun)
+                                    seed = 13031990, chains = nchains, init = init_fun)
 
 z_hat <- ifelse(summary(fit_DS_blank_predictors, pars = "E_z")$summary[, 1] < 0.5, 0, 1)
 
@@ -159,17 +164,19 @@ z_overview$two_step_z_hat[, sim] <- ifelse(summary(fit_DS_blank_predictors, pars
 
 print(paste0("End of simulation ", sim, "out of ", nsim, "."))
 }
-
+rm(fit_DS_blank_predictors)
+rm(fit_DS_predictors)
+rm(fit.glm)
 save.image("raykar/simulation_long_raykar_nsim10.rdata")
 
 sum(z_overview$z_sim == z_overview$direct_z_hat)
 sum(z_overview$z_sim == z_overview$two_step_z_hat)
-(predictors.overview$simulated.predictors - predictors.overview$direct_estimated)
-(predictors.overview$simulated.predictors - predictors.overview$two_step_estimated)
-annotator.overview$true_anno_sens - annotator.overview$direct_mean_sens
-annotator.overview$true_anno_sens - annotator.overview$two_step_mean_sens
-annotator.overview$true_anno_spec - annotator.overview$direct_mean_spec
-annotator.overview$true_anno_spec - annotator.overview$two_step_mean_spec
+rowMeans((predictors.overview$simulated.predictors - predictors.overview$direct_estimated))
+rowMeans((predictors.overview$simulated.predictors - predictors.overview$two_step_estimated))
+rowMeans(annotator.overview$true_anno_sens - annotator.overview$direct_mean_sens)
+rowMeans(annotator.overview$true_anno_sens - annotator.overview$two_step_mean_sens)
+rowMeans(annotator.overview$true_anno_spec - annotator.overview$direct_mean_spec)
+rowMeans(annotator.overview$true_anno_spec - annotator.overview$two_step_mean_spec)
     
 # bias_direct <- c(sim.data$w0, sim.data$w) - summary(fit_DS_predictors, pars = c("w0", "w"))$summary[, 1]
 # bias_two_step <- c(sim.data$w0, sim.data$w) - summary(fit.glm)[1:21, 1]
