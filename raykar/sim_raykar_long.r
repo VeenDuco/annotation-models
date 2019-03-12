@@ -54,7 +54,7 @@ data.simulation <- function(I, K, J, D, missing){
 }
 
 # set n simulations
-nsim <- 2
+nsim <- 10
 J = 10
 I = 500
 # create output for simulations
@@ -90,7 +90,7 @@ z_overview <- list(
 
 set.seed(13031990)
 for(sim in 1:nsim){
-  
+print(paste0("Start of simulation ", sim, "out of ", nsim, "."))  
 sim.data <- data.simulation(I = 500, K = 2, J = 10, D = 20, missing  = .5)
 
 w_init <- rnorm(20)
@@ -116,7 +116,7 @@ fit_DS_predictors <- sampling(object = model_predictors, data = list(J = sim.dat
                               seed = 13031990, chains = 4, init = init_fun)
 
 
-
+print(paste0("Halfway of simulation ", sim, "out of ", nsim, "."))
 # same model blank predictors.
 fit_DS_blank_predictors <- sampling(object = model_predictors, data = list(J = sim.data$J,
                                                                            I = sim.data$I,
@@ -157,10 +157,20 @@ z_overview$z_sim[, sim] <- sim.data$z
 z_overview$direct_z_hat[, sim] <- ifelse(summary(fit_DS_predictors, pars = "E_z")$summary[, 1] < 0.5, 0, 1)
 z_overview$two_step_z_hat[, sim] <- ifelse(summary(fit_DS_blank_predictors, pars = "E_z")$summary[, 1] < 0.5, 0, 1)
 
+print(paste0("End of simulation ", sim, "out of ", nsim, "."))
 }
 
+save.image("raykar/simulation_long_raykar_nsim10.rdata")
 
-
+sum(z_overview$z_sim == z_overview$direct_z_hat)
+sum(z_overview$z_sim == z_overview$two_step_z_hat)
+(predictors.overview$simulated.predictors - predictors.overview$direct_estimated)
+(predictors.overview$simulated.predictors - predictors.overview$two_step_estimated)
+annotator.overview$true_anno_sens - annotator.overview$direct_mean_sens
+annotator.overview$true_anno_sens - annotator.overview$two_step_mean_sens
+annotator.overview$true_anno_spec - annotator.overview$direct_mean_spec
+annotator.overview$true_anno_spec - annotator.overview$two_step_mean_spec
+    
 # bias_direct <- c(sim.data$w0, sim.data$w) - summary(fit_DS_predictors, pars = c("w0", "w"))$summary[, 1]
 # bias_two_step <- c(sim.data$w0, sim.data$w) - summary(fit.glm)[1:21, 1]
 # 
