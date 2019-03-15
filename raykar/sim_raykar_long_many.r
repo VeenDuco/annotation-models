@@ -36,6 +36,9 @@ data.simulation <- function(I, K, J, D, missing){
     sim.data.missing <- sim.data[-sample(1:nrow(sim.data), nrow(sim.data) * missing), ]
     N <- nrow(sim.data.missing)
     
+    print(paste0("Succes of simulating a data set is ", (max(sim.data.missing$item) & length(unique(sim.data.missing$item)) == I &
+                                                           max(sim.data.missing$annotator) & length(unique(sim.data.missing$annotator)) == J) ))
+    
     succes <- (max(sim.data.missing$item) & length(unique(sim.data.missing$item)) == I &
                  max(sim.data.missing$annotator) & length(unique(sim.data.missing$annotator)) == J) 
   }
@@ -53,20 +56,21 @@ data.simulation <- function(I, K, J, D, missing){
   
 }
 
+
 # set n simulations
 nsim <- 10
-J = 10
+J = 20
 I = 500
 K = 2
-D = 20
-missing = .5
-nchains = 4
+D = 10
+missing = .25
+nchains = 3
 
 # create output for simulations
 predictors.overview <- list(
-  simulated.predictors = matrix(NA, nrow = 21, ncol = nsim),
-  direct_estimated = matrix(NA, nrow = 21, ncol = nsim),
-  two_step_estimated = matrix(NA, nrow = 21, ncol = nsim)
+  simulated.predictors = matrix(NA, nrow = (D+1), ncol = nsim),
+  direct_estimated = matrix(NA, nrow = (D+1), ncol = nsim),
+  two_step_estimated = matrix(NA, nrow = (D+1), ncol = nsim)
 )
 
 annotator.overview <- list(
@@ -140,7 +144,7 @@ fit.glm <- rstanarm::stan_glm(z_hat ~ 1 + sim.data$x, family = binomial())
 # predictor output
 predictors.overview$simulated.predictors[, sim] <- c(sim.data$w0, sim.data$w)
 predictors.overview$direct_estimated[, sim] <- summary(fit_DS_predictors, pars = c("w0", "w"))$summary[, 1]
-predictors.overview$two_step_estimated[, sim] <- summary(fit.glm)[1:21, 1]
+predictors.overview$two_step_estimated[, sim] <- summary(fit.glm)[1:(D+1), 1]
 
 
 annotator.overview$true_anno_sens[, sim] <- sim.data$alpha
@@ -167,30 +171,34 @@ print(paste0("End of simulation ", sim, "out of ", nsim, "."))
 rm(fit_DS_blank_predictors)
 rm(fit_DS_predictors)
 rm(fit.glm)
-save.image("raykar/simulation_long_raykar_nsim10.rdata")
-
-
-load("raykar/simulation_long_raykar_nsim10.rdata")
-sum(z_overview$z_sim == z_overview$direct_z_hat)
-sum(z_overview$z_sim == z_overview$two_step_z_hat)
+save.image(paste0("raykar/simdata/sim_I",I,"J",J,"D",D,"nsim",nsim,"missing",(missing*100),".rdata"))
+        
+pdf(paste0("raykar/simpdf/sim_I",I,"J",J,"D",D,"nsim",nsim,"missing",(missing*100),".pdf"))
+# load("raykar/simulation_long_raykar_nsim10.rdata")
+# sum(z_overview$z_sim == z_overview$direct_z_hat) / length(z_overview$z_sim == z_overview$direct_z_hat)
+# sum(z_overview$z_sim == z_overview$two_step_z_hat) / length(z_overview$z_sim == z_overview$two_step_z_hat)
 
 df_z_hat_direct <- data.frame("z_correct" = as.numeric(z_overview$z_sim == z_overview$direct_z_hat),
-                              "Item" = paste0("Item ", rep(1:I, J)),
+                              "Item" = paste0("Item ", rep(1:I, nsim)),
                               "Simulation" = paste0("Simulation ", rep(1:nsim, each = I)))
 
 df_z_hat_two_step <- data.frame("z_correct" = as.numeric(z_overview$z_sim == z_overview$two_step_z_hat),
-                              "Item" = paste0("Item ", rep(1:I, J)),
-                              "Simulation" = paste0("Simulation ", rep(1:nsim, each = I)))
+                                "Item" = paste0("Item ", rep(1:I, nsim)),
+                                "Simulation" = paste0("Simulation ", rep(1:nsim, each = I)))
 
 p1 <- ggplot(df_z_hat_direct, aes(Simulation, Item)) + geom_tile(aes(fill = z_correct)) + 
   scale_fill_gradient(low = "white", high = "steelblue") +
   theme(axis.text.y  = element_text(siz = 0),
-        axis.text.x = element_text(size = 8)) + ggtitle("Direct procedure")
+        axis.text.x = element_text(size = 8)) + ggtitle(paste0("Direct procedure (",
+                                                               sum(z_overview$z_sim == z_overview$direct_z_hat) / length(z_overview$z_sim == z_overview$direct_z_hat) * 100,
+                                                               "% correct)"))
 
 p2 <- ggplot(df_z_hat_two_step, aes(Simulation, Item)) + geom_tile(aes(fill = z_correct)) + 
   scale_fill_gradient(low = "white", high = "steelblue") +
   theme(axis.text.y  = element_text(siz = 0),
-        axis.text.x = element_text(size = 8)) + ggtitle("Two-Step procedure")
+        axis.text.x = element_text(size = 8)) + ggtitle(paste0("Two-Step procedure (",
+                                                        sum(z_overview$z_sim == z_overview$two_step_z_hat) / length(z_overview$z_sim == z_overview$two_step_z_hat) * 100,
+                                                                             "% correct)"))
 
 gridExtra::grid.arrange(p1,p2)
 
@@ -209,7 +217,7 @@ plot(x = MSE_pred_direct, y = MSE_pred_two_step,
      ylim = c(0, max(c(MSE_pred_direct, MSE_pred_two_step))), 
      bty = "n", pch = "", xlab =  "MSE Direct procedure", ylab = "MSE Two-Step procedure",
      main = "Accuracy of the estimated (mean) predictors")
-text(x = MSE_pred_direct, y = MSE_pred_two_step, labels = c(paste0("w", 0:20)))
+text(x = MSE_pred_direct, y = MSE_pred_two_step, labels = c(paste0("w", 0:D)))
 abline(0, 1, lty = 3)
 
 bias_sens_direct <- rowMeans((annotator.overview$true_anno_sens - annotator.overview$direct_mean_sens)^2)
@@ -220,7 +228,7 @@ MSE_sens_two_step <- variance_sens + bias_sens_two_step
 
 plot(x = MSE_sens_direct, y = MSE_sens_two_step, 
      xlim = c(0, max(c(MSE_sens_direct, MSE_sens_two_step))), ylim = c(0, max(c(MSE_sens_direct, MSE_sens_two_step))), 
-     bty = "n", pch = c(as.character(1:10)), xlab =  "MSE Direct procedure", ylab = "MSE Two-Step procedure",
+     bty = "n", pch = c(as.character(1:J)), xlab =  "MSE Direct procedure", ylab = "MSE Two-Step procedure",
      main = "Accuracy of the estimated annotator (mean) sensitivity")
 abline(0, 1, lty = 3)
 
@@ -233,9 +241,13 @@ MSE_spec_two_step <- variance_spec + bias_spec_two_step
 plot(x = MSE_spec_direct, y = MSE_spec_two_step, 
      xlim = c(0, max(c(MSE_spec_direct, MSE_spec_two_step))), 
      ylim = c(0, max(c(MSE_spec_direct, MSE_spec_two_step))), 
-     bty = "n", pch = c(as.character(1:10)), xlab =  "MSE Direct procedure", ylab = "MSE Two-Step procedure",
+     bty = "n", pch = c(as.character(1:J)), xlab =  "MSE Direct procedure", ylab = "MSE Two-Step procedure",
      main = "Accuracy of the estimated annotator (mean) specificity")
 abline(0, 1, lty = 3)
+
+dev.off()
+
+ 
 
 
 
